@@ -25,3 +25,5 @@ url = 'https://www.ss.com/lv/transport/cars/bmw/3-series/'
 output = searcher(url, "tr_54757825")
 print("NR | MODEL | YEAR | ENGINE | PRICE EUR")
 print(output)
+
+
