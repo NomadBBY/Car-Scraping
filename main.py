@@ -1,62 +1,35 @@
 from bs4 import BeautifulSoup
 import requests
 
-
 def fetch_soup(website_url):
     response = requests.get(website_url)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    return soup
-
-
-def output_decorator(func):
-    def wrapper(*args, **kwargs):
-        url = args[0]
-        id = args[1]
-        # Fetch the output from the decorated function
-        output = func(*args, **kwargs)
-        # Print the header only once
-        if not wrapper.header_printed:
-            print("NR | MODEL | YEAR | ENGINE | PRICE EUR | LINK")
-            wrapper.header_printed = True
-        print(output)
-    wrapper.header_printed = False  # Flag to track if header is printed
-    return wrapper
-
-
-@output_decorator
-def searcher(website_url, id) -> str:
-    soup = fetch_soup(website_url)
-    target_row = soup.find("tr", id=id)
-    result = ""
-    count = searcher.count
-    if target_row:
-        td_elements = target_row.find_all("td", class_="msga2-o pp6")
-        link_element = target_row.find("a", class_="am")
-        if link_element:
-            car_link = "https://www.ss.com" + link_element.get("href")
-        else:
-            car_link = "Link not found"
-
-        # Extract each text value and strip any extra spaces
-        values = [td.get_text(strip=True) for td in td_elements]
-        # Format the result with the correct spacing and euro sign
-        result = f"{count}    {values[0]}     {values[1]}    {values[2]}     {values[3].strip('€')}  : {car_link}"
-        searcher.count += 1
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.content, "html.parser")
+        return soup
     else:
-        result = f"Row with id='{id}' not found"
+        print(f"Unable to fetch page: {website_url}")
+        return None
 
-    return result
+def fetch_div(soup, class_name):
+    if soup:
+        div = soup.find('div', class_=class_name)
+        return div
+    return None
 
-
-# Initialize the static variable count
-searcher.count = 1
-
-# Example usage
 if __name__ == "__main__":
-    url = 'https://www.ss.com/lv/transport/cars/bmw/3-series/'
-    bmw_one = searcher(url, "tr_54757825")
-    bmw_two = searcher(url, "tr_55126580")
-    bmw_three = searcher(url, "tr_54908511")
-    bmw_four = searcher(url, "tr_55126424")
-    bmw_five = searcher(url, "tr_55126553")
+    link = "https://lv.brcauto.eu/lietoti-auto?city=5&search=1&makes=31473"
+    
+    soup = fetch_soup(link)
+    if soup:
 
+        print("Connection Made")
+        print(f"Title of the page: {soup.title.string}")
+        div = fetch_div(soup, "cars-container row-3")
+        if div:
+            print("Found the div with class 'cars-container row-3'")
+            print(div)
+        else:
+            print("Div with class 'cars-container row-3' not found")
+            
+    else:
+        print("Failed to fetch the page")
