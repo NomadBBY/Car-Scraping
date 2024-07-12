@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
+import csv
 
 def fetch_soup(website_url: str):
     response = requests.get(website_url)
@@ -18,7 +19,6 @@ def fetch_div(soup, div_name: str, class_name: str):
 
 def fetch_subtitles(div, subtitle_name: str, subtitle_class_name:str):
     if div:
-        #subtitles = div.find_all('p', class_='cars__subtitle')
         subtitles = div.find_all(subtitle_name, class_=subtitle_class_name)
         return subtitles
     return []
@@ -29,7 +29,7 @@ def parse_price(price_str):
 def sort_cars_by_price(cars):
     return sorted(cars, key=lambda x: parse_price(x[2].getText().strip()))
 
-def fetch_and_print_subtitles(div, title_tag, title_class, spec_tag, spec_class, price_tag, price_class):
+def fetch_and_write_subtitles(div, title_tag, title_class, spec_tag, spec_class, price_tag, price_class, csv_filename):
     titles = fetch_subtitles(div, title_tag, title_class)
     specs = fetch_subtitles(div, spec_tag, spec_class)
     prices = fetch_subtitles(div, price_tag, price_class)
@@ -38,11 +38,19 @@ def fetch_and_print_subtitles(div, title_tag, title_class, spec_tag, spec_class,
         cars = list(zip(titles, specs, prices))
         sorted_cars = sort_cars_by_price(cars)
         
-        for i, (title, spec, price) in enumerate(sorted_cars, 1):
-            print(f"Car {i}:")
-            print(f"{title.getText().strip()} - {spec.getText().strip()}")
-            print(f"Price: {price.getText().strip()}")
-            print("-" * 100)
+        with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(['Car Number', 'Title', 'Specs', 'Price'])  # Write header
+            
+            for i, (title, spec, price) in enumerate(sorted_cars, 1):
+                csvwriter.writerow([
+                    i,
+                    title.getText().strip(),
+                    spec.getText().strip(),
+                    price.getText().strip()
+                ])
+        
+        print(f"Data has been written to {csv_filename}")
     elif not titles:
         print(f"No titles with class '{title_class}' found inside the div")
     elif not specs:
@@ -62,11 +70,9 @@ if soup:
     div = fetch_div(soup, 'div' , "cars-container row-3")
     if div:
         print("Found the div with class 'cars-container row-3'")
-        print(div.prettify())
+        fetch_and_write_subtitles(div, 'h2', "cars__title", 'p', "cars__subtitle", 'div', 'w-full lg:w-auto cars-price text-right pt-1', 'cars_data.csv')
     else:
         print("Div with class 'cars-container row-3' not found")
         
 else:
     print("Failed to fetch the page")
-
-fetch_and_print_subtitles(div, 'h2', "cars__title", 'p', "cars__subtitle", 'div', 'w-full lg:w-auto cars-price text-right pt-1')
